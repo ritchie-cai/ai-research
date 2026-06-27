@@ -1,0 +1,86 @@
+# docker-compose.compiler.yml
+# 编译沙箱集群，按芯片平台独立部署
+# 早期固定实例数，按需手动调整 replicas
+
+version: '3.8'
+
+services:
+
+  # ── ESP32 编译池（xtensa 工具链） ─────────────────────────
+  compiler-esp32-1:
+    image: your-registry/compiler-esp32:latest
+    environment:
+      - INSTANCE_ID=esp32-1
+    networks: [compiler-internal]
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2g
+    # 编译沙箱不对外暴露端口，只在内网可达
+    # ports 故意不配置
+
+  compiler-esp32-2:
+    image: your-registry/compiler-esp32:latest
+    environment:
+      - INSTANCE_ID=esp32-2
+    networks: [compiler-internal]
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2g
+
+  # ── STM32 编译池（arm-none-eabi 工具链） ──────────────────
+  compiler-stm32-1:
+    image: your-registry/compiler-stm32:latest
+    environment:
+      - INSTANCE_ID=stm32-1
+    networks: [compiler-internal]
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2g
+
+  # ── RISC-V 编译池（riscv32 工具链） ───────────────────────
+  compiler-riscv-1:
+    image: your-registry/compiler-riscv:latest
+    environment:
+      - INSTANCE_ID=riscv-1
+    networks: [compiler-internal]
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2g
+
+  # ── Redis（实例池分布式锁） ────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    networks: [compiler-internal]
+    volumes:
+      - redis-data:/data
+
+  # ── 调度层 ────────────────────────────────────────────────
+  dispatcher:
+    image: your-registry/platform:latest
+    command: node scripts/platform-compile-dispatcher.js
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - ARTIFACT_BUCKET=your-platform-artifacts
+      - AWS_REGION=ap-southeast-1
+    networks:
+      - compiler-internal
+      - platform-external  # 调度层对平台其他服务可达
+    depends_on: [redis]
+
+networks:
+  compiler-internal:
+    driver: bridge
+    internal: true   # 编译实例不能访问外网，只走内网
+  platform-external:
+    external: true   # 接入平台主网络
+
+volumes:
+  redis-data:
