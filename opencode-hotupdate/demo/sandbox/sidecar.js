@@ -244,7 +244,7 @@ async function checkAndReload() {
 
 async function getBusyCount() {
   try {
-    const res = await fetch(`${OPCODE_URL}/instance/session/status`);
+    const res = await fetch(`${OPCODE_URL}/session/status`);
     if (!res.ok) return 0;
     const m = await res.json();
     return Object.keys(m).length;

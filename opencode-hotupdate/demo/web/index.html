@@ -194,19 +194,26 @@ async function sendMessage() {
   addMessage('system', 'Waiting for response...');
 
   try {
-    // OpenCode HTTP API: POST a prompt, get SSE stream
-    const res = await fetch(`${currentContainer.opencodeUrl}/v1/session`, {
+    // OpenCode v2 API: create session and send prompt
+    const sessionRes = await fetch(`${currentContainer.opencodeUrl}/api/session`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        prompt: text,
-        directory: '/opencode',
-      }),
+      body: JSON.stringify({}),
     });
-    if (res.ok) {
-      addMessage('assistant', 'Response received (check opencode console for details)');
+    if (sessionRes.ok) {
+      const { id: sessionId } = await sessionRes.json();
+      const promptRes = await fetch(`${currentContainer.opencodeUrl}/api/session/${sessionId}/prompt`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: text, directory: '/tmp/opencode-demo-sandbox' }),
+      });
+      if (promptRes.ok) {
+        addMessage('assistant', 'Response received (check opencode console for details)');
+      } else {
+        addMessage('system', `Error: HTTP ${promptRes.status}`);
+      }
     } else {
-      addMessage('system', `Error: HTTP ${res.status}`);
+      addMessage('system', `Session creation failed: HTTP ${sessionRes.status}`);
     }
   } catch(e) {
     addMessage('system', `Connection error: ${e.message}`);

@@ -242,7 +242,7 @@ async function checkAndReload() {
 
 async function getBusyCount() {
   try {
-    const r = await fetch(`${OPCODE_URL}/instance/session/status`);
+    const r = await fetch(`${OPCODE_URL}/session/status`);
     if (!r.ok) return 0;
     return Object.keys(await r.json()).length;
   } catch { return 0; }
