@@ -4,12 +4,6 @@
 import fs from 'fs';
 import path from 'path';
 import http from 'http';
-import { McpServer } from './sidecar.js' assert { type: 'module' };
-
-// Wait, McpServer is inline in sidecar.js. Let me redefine it here.
-// Actually, let me just inline the McpServer class here too for simplicity.
-
-// No wait, I can't import it from sidecar.js easily with assert. Let me just inline it.
 
 // ─── MCP Server (inline) ────────────────────────────────────
 
