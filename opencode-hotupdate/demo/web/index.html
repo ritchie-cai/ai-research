@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenCode Sandbox Demo</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: system-ui, -apple-system, sans-serif; background:#0d1117; color:#c9d1d9; min-height:100vh; }
+  .layout { display:flex; height:100vh; }
+  .sidebar { width:320px; border-right:1px solid #21262d; display:flex; flex-direction:column; }
+  .main { flex:1; display:flex; flex-direction:column; }
+  .panel { padding:16px; }
+  .panel-header { font-size:13px; font-weight:600; color:#8b949e; text-transform:uppercase; letter-spacing:.5px; padding:12px 16px; border-bottom:1px solid #21262d; }
+  .tabs { display:flex; border-bottom:1px solid #21262d; }
+  .tab { flex:1; padding:10px; text-align:center; font-size:13px; color:#8b949e; cursor:pointer; border-bottom:2px solid transparent; transition:all .15s; }
+  .tab.active { color:#58a6ff; border-bottom-color:#58a6ff; }
+  .tab:hover { color:#c9d1d9; background:#161b22; }
+
+  /* container list */
+  .container-item { padding:12px 16px; border-bottom:1px solid #21262d; cursor:pointer; transition:background .15s; }
+  .container-item:hover { background:#161b22; }
+  .container-item.active { background:#1f2937; border-left:3px solid #58a6ff; }
+  .container-name { font-weight:600; font-size:14px; }
+  .container-meta { font-size:12px; color:#8b949e; margin-top:4px; }
+  .status-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; }
+  .status-online { background:#3fb950; }
+  .status-offline { background:#f85149; }
+
+  /* chat */
+  .chat-messages { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; }
+  .msg { max-width:85%; padding:10px 14px; border-radius:12px; font-size:14px; line-height:1.5; white-space:pre-wrap; word-break:break-word; }
+  .msg.user { align-self:flex-end; background:#238636; color:#fff; }
+  .msg.assistant { align-self:flex-start; background:#21262d; }
+  .msg.system { align-self:center; background:transparent; color:#8b949e; font-size:12px; }
+  .chat-input-area { padding:12px 16px; border-top:1px solid #21262d; display:flex; gap:8px; }
+  .chat-input { flex:1; background:#0d1117; border:1px solid #30363d; border-radius:8px; color:#c9d1d9; padding:10px 14px; font-size:14px; outline:none; }
+  .chat-input:focus { border-color:#58a6ff; }
+  .btn { padding:8px 16px; border-radius:8px; border:none; cursor:pointer; font-size:13px; font-weight:500; transition:all .15s; }
+  .btn-primary { background:#238636; color:#fff; }
+  .btn-primary:hover { background:#2ea043; }
+  .btn-primary:disabled { opacity:.5; cursor:not-allowed; }
+  .btn-danger { background:#da3633; color:#fff; }
+  .btn-danger:hover { background:#f85149; }
+
+  /* skill panel */
+  .skill-form { display:flex; flex-direction:column; gap:12px; padding:16px; }
+  .skill-form input, .skill-form textarea { background:#0d1117; border:1px solid #30363d; border-radius:8px; color:#c9d1d9; padding:10px 14px; font-size:13px; font-family:monospace; outline:none; resize:vertical; }
+  .skill-form input:focus, .skill-form textarea:focus { border-color:#58a6ff; }
+  .skill-form textarea { min-height:160px; }
+  .empty-state { flex:1; display:flex; align-items:center; justify-content:center; color:#484f58; font-size:14px; }
+  select { background:#0d1117; border:1px solid #30363d; border-radius:8px; color:#c9d1d9; padding:8px 12px; font-size:13px; outline:none; }
+  .log-area { height:150px; overflow-y:auto; background:#0d1117; border:1px solid #30363d; border-radius:8px; padding:10px; font-family:monospace; font-size:12px; color:#8b949e; margin:12px 16px; }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- sidebar -->
+  <div class="sidebar">
+    <div class="panel-header">Sandboxes</div>
+    <div id="containerList"></div>
+    <div id="logArea" class="log-area"></div>
+  </div>
+
+  <!-- main -->
+  <div class="main">
+    <div class="tabs">
+      <div class="tab active" data-tab="chat">Chat</div>
+      <div class="tab" data-tab="skills">Skill / Agent Push</div>
+    </div>
+
+    <!-- Chat panel -->
+    <div id="chatPanel" class="panel" style="flex:1;display:flex;flex-direction:column;">
+      <div id="chatMessages" class="chat-messages">
+        <div class="msg system">Select a sandbox from the sidebar to start chatting</div>
+      </div>
+      <div class="chat-input-area">
+        <input id="chatInput" class="chat-input" placeholder="Type a message..." disabled />
+        <button id="sendBtn" class="btn btn-primary" disabled>Send</button>
+      </div>
+    </div>
+
+    <!-- Skills panel (hidden by default) -->
+    <div id="skillsPanel" class="panel" style="flex:1;display:none;">
+      <div class="skill-form">
+        <select id="targetContainer">
+          <option value="">Select target container...</option>
+        </select>
+        <input id="skillName" placeholder="Skill name (e.g. my-skill)" />
+        <textarea id="skillCode" placeholder="Skill code...&#10;&#10;export default {&#10;  name: 'my-skill',&#10;  description: '...',&#10;  run: async (params) => { return '...'; }&#10;};"></textarea>
+        <button id="pushSkillBtn" class="btn btn-primary">Push Skill Update</button>
+        <button id="pushAgentBtn" class="btn" style="background:#1f6feb;color:#fff;">Push Agent Update</button>
+        <div id="pushResult" style="font-size:13px;margin-top:8px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CP_URL = window.location.origin;
+
+let currentContainer = null;
+let containers = [];
+let eventSource = null;
+
+// ─── Tabs ──────────────────────────────────────────────────
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('chatPanel').style.display = tab.dataset.tab === 'chat' ? 'flex' : 'none';
+    document.getElementById('skillsPanel').style.display = tab.dataset.tab === 'skills' ? 'block' : 'none';
+  });
+});
+
+// ─── Container list ────────────────────────────────────────
+
+function log(msg) {
+  const el = document.getElementById('logArea');
+  el.textContent += `[${new Date().toLocaleTimeString()}] ${msg}\n`;
+  el.scrollTop = el.scrollHeight;
+}
+
+async function refreshContainers() {
+  try {
+    const res = await fetch(`${CP_URL}/api/containers`);
+    containers = await res.json();
+    renderContainerList();
+
+    // Update skill target selector
+    const sel = document.getElementById('targetContainer');
+    sel.innerHTML = '<option value="">Select target container...</option>' +
+      containers.map(c => `<option value="${c.id}">${c.sandboxId || c.id}</option>`).join('');
+  } catch(e) {
+    log('Failed to refresh containers: ' + e.message);
+  }
+}
+
+function renderContainerList() {
+  const list = document.getElementById('containerList');
+  if (containers.length === 0) {
+    list.innerHTML = '<div class="container-item"><span class="status-dot status-offline"></span>No containers online</div>';
+    return;
+  }
+  list.innerHTML = containers.map(c => `
+    <div class="container-item ${currentContainer?.id === c.id ? 'active' : ''}" data-id="${c.id}">
+      <div class="container-name">
+        <span class="status-dot ${c.hasSSE ? 'status-online' : 'status-offline'}"></span>
+        ${c.sandboxId || c.id}
+      </div>
+      <div class="container-meta">${c.opencodeUrl} | SSE: ${c.hasSSE ? 'connected' : 'disconnected'}</div>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.container-item').forEach(el => {
+    el.addEventListener('click', () => selectContainer(el.dataset.id));
+  });
+}
+
+function selectContainer(id) {
+  currentContainer = containers.find(c => c.id === id);
+  if (!currentContainer) return;
+  renderContainerList();
+
+  document.getElementById('chatInput').disabled = false;
+  document.getElementById('sendBtn').disabled = false;
+
+  log(`Selected container: ${currentContainer.sandboxId}`);
+  document.getElementById('chatMessages').innerHTML =
+    `<div class="msg system">Connected to ${currentContainer.sandboxId} — say hello!</div>`;
+}
+
+// ─── Chat ──────────────────────────────────────────────────
+
+const chatInput = document.getElementById('chatInput');
+const sendBtn = document.getElementById('sendBtn');
+const chatMessages = document.getElementById('chatMessages');
+
+function addMessage(role, text) {
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.textContent = text;
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+async function sendMessage() {
+  const text = chatInput.value.trim();
+  if (!text || !currentContainer) return;
+  chatInput.value = '';
+  addMessage('user', text);
+  addMessage('system', 'Waiting for response...');
+
+  try {
+    // OpenCode HTTP API: POST a prompt, get SSE stream
+    const res = await fetch(`${currentContainer.opencodeUrl}/v1/session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt: text,
+        directory: '/opencode',
+      }),
+    });
+    if (res.ok) {
+      addMessage('assistant', 'Response received (check opencode console for details)');
+    } else {
+      addMessage('system', `Error: HTTP ${res.status}`);
+    }
+  } catch(e) {
+    addMessage('system', `Connection error: ${e.message}`);
+    log(`Chat error: ${e.message}`);
+  }
+}
+
+sendBtn.addEventListener('click', sendMessage);
+chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+
+// ─── Skill push ────────────────────────────────────────────
+
+document.getElementById('pushSkillBtn').addEventListener('click', async () => {
+  const containerId = document.getElementById('targetContainer').value;
+  const name = document.getElementById('skillName').value.trim();
+  const code = document.getElementById('skillCode').value.trim();
+  if (!containerId || !name || !code) {
+    document.getElementById('pushResult').textContent = 'Please fill all fields';
+    return;
+  }
+  try {
+    const res = await fetch(`${CP_URL}/api/skills/push/${containerId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, code }),
+    });
+    const data = await res.json();
+    document.getElementById('pushResult').textContent = res.ok
+      ? `Skill "${name}" pushed successfully!`
+      : `Error: ${data.error}`;
+    log(`Skill push: ${name} → ${containerId} (${res.ok ? 'ok' : 'fail'})`);
+  } catch(e) {
+    document.getElementById('pushResult').textContent = `Error: ${e.message}`;
+  }
+});
+
+document.getElementById('pushAgentBtn').addEventListener('click', async () => {
+  const containerId = document.getElementById('targetContainer').value;
+  const name = document.getElementById('skillName').value.trim();
+  const code = document.getElementById('skillCode').value.trim();
+  if (!containerId || !name || !code) {
+    document.getElementById('pushResult').textContent = 'Please fill all fields';
+    return;
+  }
+  try {
+    const res = await fetch(`${CP_URL}/api/agents/push/${containerId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, config: { name, description: 'Demo agent', prompt: code } }),
+    });
+    const data = await res.json();
+    document.getElementById('pushResult').textContent = res.ok
+      ? `Agent "${name}" pushed successfully!`
+      : `Error: ${data.error}`;
+    log(`Agent push: ${name} → ${containerId} (${res.ok ? 'ok' : 'fail'})`);
+  } catch(e) {
+    document.getElementById('pushResult').textContent = `Error: ${e.message}`;
+  }
+});
+
+// ─── Init ──────────────────────────────────────────────────
+
+refreshContainers();
+setInterval(refreshContainers, 5_000);
+log('Demo ready. Control plane: ' + CP_URL);
+</script>
+</body>
+</html>

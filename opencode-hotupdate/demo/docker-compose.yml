@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+  control-plane:
+    build: ./control-plane
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./control-plane/server.js:/app/server.js
+      - ./web:/app/public
+    working_dir: /app
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/containers', r => { process.exit(r.statusCode === 200 ? 0 : 1) })"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
