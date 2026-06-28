@@ -8,7 +8,6 @@
 
 set -e
 ROOT="$(cd "$(dirname "$0")" && pwd)"
-OPCODE_DIR="${HOME}/dev/ai/ai-learning/projects/opencode"
 
 echo "=== OpenCode Sandbox Demo (Local Mode) ==="
 echo ""
@@ -21,12 +20,19 @@ if ! curl -sf http://localhost:3000/api/containers > /dev/null 2>&1; then
 fi
 echo "✅ control plane running"
 
-# ── check opencode source ──────────────────
-if [ ! -f "$OPCODE_DIR/packages/opencode/src/index.ts" ]; then
-  echo "❌ opencode source not found at $OPCODE_DIR"
+# ── check opencode binary ──────────────────
+OPENCODE_BIN="${HOME}/.opencode/bin/opencode"
+if [ ! -x "$OPENCODE_BIN" ]; then
+  echo "❌ opencode binary not found at $OPENCODE_BIN"
   exit 1
 fi
-echo "✅ opencode source found"
+echo "✅ opencode binary found"
+
+if ! "$OPENCODE_BIN" serve --help > /dev/null 2>&1; then
+  echo "❌ opencode binary does not support 'serve' command"
+  exit 1
+fi
+echo "✅ opencode serve command available"
 
 # ── create required dirs ───────────────────
 SANDBOX_DIR="/tmp/opencode-demo-sandbox"
@@ -72,6 +78,5 @@ echo "Starting opencode serve on :19876 ..."
 echo "  → working dir: $SANDBOX_DIR"
 echo ""
 
-cd "$OPCODE_DIR"
-exec bun run --conditions=browser packages/opencode/src/index.ts serve \
-  --port 19876
+cd "$SANDBOX_DIR"
+exec "$OPENCODE_BIN" serve --port 19876
