@@ -1,6 +1,6 @@
 # Agent 产品与技术研究：用「灵思」校准 CoBuilder
 
-**研究日期：2026-10-18。** 依据公开的一手产品资料、工程文章、论文及访谈；尚未登录第三方产品进行同题实测，也未取得 CoBuilder 的运行轨迹或目标板卡。文中“启发”“建议”“假设”属于分析，不等于已验证的 CoBuilder 事实。
+**更新日期：2026-10-18。** 依据公开的一手产品资料、工程文章、论文及访谈；尚未登录第三方产品进行同题实测，也未取得 CoBuilder 的运行轨迹或目标板卡。文中“启发”“建议”“假设”属于分析，不等于已验证的 CoBuilder 事实。2026 年材料优先，2025 年访谈保留为产品早期选择的历史参照。
 
 ## 0. 研究问题与边界
 
@@ -17,6 +17,7 @@
 3. **执行环境是能力的一部分。** [Cursor 的云端 Agent 复盘](https://cursor.com/blog/cloud-agent-lessons)发现环境不完整会隐性降低结果质量；[SWE-agent](https://arxiv.org/abs/2405.15793)指出 Agent 可操作的计算机接口影响表现。对于 CoBuilder，目标板、SDK、模组 AT/PPP 状态、串口、烧录和日志都应能进入执行与反馈闭环。沙箱编译成功只说明一个较浅的阶段通过。
 4. **多加一层复杂 harness 不保证提分。** 2026 年 10 月的预印本[《What Does a Harness Buy? Tokens, Mostly》](https://arxiv.org/abs/2610.04433)在固定模型的 SWE-bench Verified 比较中发现，两个 harness 的通过率差距可能落在统计噪声内，成本却可相差约三倍。它只覆盖编码基准，不代表 IoT 硬件场景。对 CoBuilder 的操作性结论是：先测清失败来自需求、环境、工具、模型还是验证，再决定是否增加编排层。
 5. **市场数字支持“需求已验证”，不支持拿披露数据直接排名产品好坏。** 不同来源混用注册用户、周活、安装机器、项目数、网站访问量、ARR 和年化运行率。下面逐项标注口径；公司总营收不能记到单个 Agent 产品名下。
+6. **2026 年的 Muse 提醒我们：Agent 的持续性会改变整个产品界面。** [Muse 团队的设计复盘](https://introducing.muse.ai/)描述一个长期会话、后台任务、目标视图、活动记录和可编辑记忆，同时为关键动作保留明确的接受/拒绝控件。CoBuilder 不是个人生活助手，但灵思开发任务同样跨越多次生成、实机测试和人工修改，需要一个可恢复、可审查的工作空间。
 
 ## 2. 代表产品：真正值得拆解的交互与技术机制
 
@@ -34,6 +35,7 @@
 | [n8n Assistant / Agents](https://blog.n8n.io/introducing-n8n-assistant/) | 自动化构建者及业务技术团队 | 自然语言规划、生成可手工编辑的原生节点图、请求凭证、运行、逐节点看输入/输出/错误、修复重跑；[Agents](https://blog.n8n.io/introducing-n8n-agents/)与原有 workflow 双向组合 | 这是 CoBuilder 工作流生成最直接的参照：产物可编辑，且有带真实/样例数据的执行与修复循环；凭证和激活保留确认点 |
 | [Dify Agent / Workflow](https://dify.ai/blog/a-new-chapter-for-dify-agent) | 开发者、业务团队构建可运营的 AI 应用 | 新 Agent 可独立存在并复用于工作流；工作流与 Agent 拥有不同控制权，支持通过对话逐步塑形和复用 | 把“灵思内容归类”做成可单独测试、版本化、可嵌入流程的能力，别每次生成一个不可维护的大图 |
 | [Manus](https://manus.im/blog/manus-sandbox) | 一般用户/团队委托研究、文件和网页操作等任务 | 每项任务拥有隔离的云端计算机，文件/网络/浏览器构成可持续的外部状态；[工程复盘](https://manus.im/uk/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus)强调上下文、工具输出和错误轨迹如何进入下一步 | 借鉴“任务资产与错误可追溯”，但沙箱不能替代有蜂窝模组的真实设备环境 |
+| [Muse / Meta，2026-09](https://about.fb.com/news/2026/09/introducing-muse-personal-ai-agent/) | 普通消费者委托跨应用的长期个人事务 | 专属持久 VM 与浏览器、长期记忆、后台任务和主动提醒；[设计文章](https://introducing.muse.ai/)说明目标页、活动记录、记忆编辑以及不可逆动作的确定性确认控件 | 借鉴“任务跨会话持续、过程可见、关键状态可直接编辑”。它是个人 Agent，并非智能硬件开发产品；不能把其 VM 当作解决串口问题的现成方案 |
 | [LangSmith Engine](https://www.langchain.com/blog/introducing-langsmith-engine) | 已上线 Agent 的研发/运营团队 | 聚类失败 trace，关联代码提出修复、评估器、回归样例；从生产失败形成下一次可执行测试 | CoBuilder V1 工作流效果差时，最有用的不是又生成一版，而是积累“失败 → 根因 → 对应回归样例”的产品机制 |
 
 **跨产品的产品思想。** 第一层是“用户委托一个目标”，第二层是“Agent 得到足够且正确的工具/环境”，第三层是“交付原生、可审阅的产物”，第四层是“用执行结果检验，再修复”。n8n 强在可编辑工作流及节点证据，Cursor/Codex/Claude Code 强在开发执行面，Replit/Lovable 强在从需求到运行成品，LangSmith 强在长期质量循环。CoBuilder 的差异点不必是更大的 Agent，而可能是把硬件开发专有的真实反馈接入这四层。此段是研究综合推论。
@@ -52,7 +54,28 @@
 | [Harness Engineering](https://arxiv.org/abs/2609.00006) | 11 个代码 Agent 的运行时由哪些部件组成 | 可作为设计清单：循环、模型接入、工具、上下文、安全/权限、编排、扩展。但它是代码系统源代码调查，不是 IoT 架构标准 |
 | [What Does a Harness Buy? Tokens, Mostly](https://arxiv.org/abs/2610.04433) | 固定模型后，换 harness 提升多大、成本如何 | 给架构热情降温：在该编码基准里，某些 harness 的胜率差距难与随机波动区分，成本差异更明显。CoBuilder 应做对照实验和多次运行；这篇预印本不否定 IoT 专用工具的价值 |
 
-### 3.2 工程博客：从“会做”走向“可靠地做”
+### 3.2 2026 年工程文章与实证研究：优先读这些新实践
+
+以下优先选**产品机制和工程约束**，而非只追模型榜单。同一家公司不同文章也代表不同层级：产品界面、Agent runtime、权限、设备原型、规模化基础设施。
+
+| 2026 年资料 | 主要观点 | 对 CoBuilder/灵思的推论与边界 |
+|---|---|---|
+| [Meta：How We Designed Muse，09 月](https://introducing.muse.ai/) · [Muse 发布说明](https://about.fb.com/news/2026/09/introducing-muse-personal-ai-agent/) | Agent 持续在后台做事时，要把目标、进度、活动记录、记忆和权限变成可见界面；购买、发邮件等关键动作要有确定性控件。其专属 VM 与独立 Sentinel 审核代理是 Meta 自述架构 | CoBuilder 可以把“灵思规格、工作流、固件、板卡状态、失败记录”做成持续的项目状态，而不是一段不断变长的聊天；烧录和部署等关键操作展示具体影响范围。Muse 的生活任务场景与 CoBuilder 不同，不能照搬其主动提醒频率 |
+| [Anthropic：Scaling Managed Agents，04-08](https://www.anthropic.com/engineering/managed-agents) | 将 append-only session、Agent harness、sandbox 分成可独立替换的组件；模型变强后，旧 harness 的补丁可能失效或变成负担 | CoBuilder 若接本地串口执行器，应让用户意图与任务状态留在持久层，让执行器可重连/更换；但 V1 可用较简单实现，不必复制云服务的全部弹性基础设施 |
+| [Anthropic：Agentic coding and persistent returns to expertise，06-16](https://www.anthropic.com/research/claude-code-expertise) | 对约 40 万次 Claude Code 交互会话的研究发现：典型会话中，人做约 70% 的规划决策，Claude 做约 80% 的执行决策；任务领域经验与成功率相关。其“成功”依据会话证据判断，研究未观察实际部署后的结果 | CoBuilder 应让熟悉硬件与场景的人明确模组、功耗、按键交互和验收标准，再让 Agent 执行与诊断。面向新兴开发者，可把这些决策做成可选的规格引导；不能把“会话中验证成功”当成目标板可用 |
+| [Anthropic：Claude Code Auto Mode，03-25](https://www.anthropic.com/engineering/claude-code-auto-mode) | 频繁确认导致审批疲劳；其方案分别检查外部输入与待执行动作，用风险分类减少普通操作中断，并公开讨论误判 | 对 CoBuilder，读文档、生成、编译可连续执行；刷写板卡、改变线上工作流等应依据目标板、环境和影响范围决策。模型分类器自身也会漏判，不能替代边界清晰的设备权限 |
+| [Claude Code：动态工作流，06-02](https://claude.com/blog/a-harness-for-every-task-dynamic-workflows-in-claude-code) | 对复杂高价值任务，可临时生成专用 harness/子任务编排；作者也明确提醒额外 token 成本 | 诊断“弱网、录音丢帧、串口报错”可尝试专用诊断流程；正常分类链路不需要默认多 Agent。与本文固定模型的 harness 论文形成可检验张力：按灵思任务测净收益 |
+| [OpenAI：Codex as a Platform，08-19](https://developers.openai.com/blog/codex-as-a-platform) | 同一 Agent 循环可进入 CLI、IDE 或领域专用产品界面；应用拥有上下文、工具、运行边界和审批体验 | CoBuilder 的优势应放在硬件开发界面与真实设备工具，而不是再做通用聊天框；可以复用通用 harness，领域能力留在产品层。这是架构参照，不是接入建议 |
+| [OpenAI：Introducing the Agents API，09-10](https://openai.com/index/introducing-the-agents-api/) | 将长时间运行的 Agent harness、云端沙箱、文件与中间结果持久化作为托管能力提供，说明“对话生成”与“可恢复的执行环境”是不同产品层 | 对 CoBuilder，可借其任务状态、工具事件、可恢复产物的抽象；但云端沙箱本身不拥有本地串口和实机反馈，设备侧仍需受控执行入口 |
+| [OpenAI：Rethinking Skills and Prompts，09-11](https://developers.openai.com/blog/rethinking-skills-and-prompts-for-gpt-6-astra) | 模型升级后，冗长技能描述、通用“每次都读全部文档”、过度限定的任务脚本可能拖慢或误导 Agent；应按任务加载上下文并定义完成标准 | 若 CoBuilder 的工作流效果差，不宜只累加更长 prompt。比较精简约束、按需模组资料、明确验收任务后的结果；这篇文章是 Codex 团队在特定模型上的经验，不应直接泛化为所有模型 |
+| [OpenAI：语音 LED 硬件原型，09-23](https://developers.openai.com/blog/bringing-my-led-display-to-life) | Codex 帮作者识别接线、调试 ESP32 控制器、将常驻服务移到 Raspberry Pi；作者亲自处理物理连接与异常反馈 | 这是最贴近 CoBuilder 的 2026 案例：Agent 能跨软件和硬件推进原型，但人的物理操作与真实反馈仍在闭环内。它没有证明任意蜂窝设备、量产固件或 App/云端全链路可自动完成 |
+| [Anthropic：Redesigning Source Control，10-13](https://www.anthropic.com/engineering/redesigning-source-control) · [OpenAI：Maintaining Software，10-14](https://developers.openai.com/blog/maintaining-software-with-the-gpt-6-family) | Agent 生成量上升后，代码合并、CI、维护和审查成为新瓶颈；OpenAI 的内部案例强调从多种系统取证后提交小的可审阅改动 | 对 CoBuilder 的远期提醒是固件/工作流变更必须有版本、影响范围和回归证据。Anthropic 的每天数万次合并是其内部特殊规模，不是 CoBuilder V1 要建设同级源码系统的理由 |
+
+这组 2026 资料提出一个更准确的产品问题：**CoBuilder 要为“开发智能硬件的持续任务”设计什么状态与操作界面？** 对灵思，用户需要随时知道哪些东西已经生成、哪些在目标板上验证、哪些只是模型猜测；用户改动分类规则或硬件选择之后，Agent 应能从正确版本继续。Muse 的目标/活动/权限 UI、Anthropic 的 session-harness-sandbox 分离、OpenAI 的领域界面观点分别从体验、运行时和嵌入方式支持这个判断。这仍需 CoBuilder 实测。
+
+另一个值得用实验检验的张力是：Claude Code 的动态工作流主张按复杂任务增加编排，OpenAI 的新提示实践提醒旧脚手架可能拖累更强模型。我的判断是先以灵思同题失败轨迹分组——需求缺失、工作流逻辑、SDK/串口环境、实机网络——然后只在确有收益的组加入专用工具或编排。不能把所有低成功率都归因于“Agent 不够自主”。
+
+### 补充：经典方法与其他工程复盘
 
 | 资料 | 主要观点 | 我的思考 |
 |---|---|---|
@@ -66,10 +89,11 @@
 | [Replit：Evaluating and Improving Agent](https://replit.com/blog/evaluating-and-improving-agent-at-scale) | 从真实 PRD 与自然语言测试计划评价最终应用，持续把失败变成改进数据 | 灵思 benchmark 要从一句真实需求到设备和工作流的观察结果。单测通过、图画完整、回答流利都只是中间指标 |
 | [LangSmith Engine / IssueBench](https://www.langchain.com/blog/introducing-langsmith-engine) · [评测说明](https://www.langchain.com/blog/issuebench-how-we-evaluate-engine) | 把重复失败聚合为问题，并用已知正负样例评估问题发现能力 | CoBuilder 应把用户修正、失败运行、板卡日志归入原因类别；同时防止“故障分类 Agent”自己误报，所以分类器也要有 ground truth |
 
-### 3.3 三期访谈/播客：产品选择背后的判断
+### 3.3 访谈/播客：2026 年产品决策与 2025 年历史参照
 
 | 访谈 | 可核对的主张 | 给 CoBuilder 的启发 |
 |---|---|---|
+| [Alexandr Wang × David Senra：Creating Muse，2026-10-11](https://www.davidsenra.com/episode/alexandr-wang) | 访谈讲 Muse 约七个月的产品打磨、Meta 为何选择个人 Agent、产品需要统一的设计观点，以及 Agent 信任如何建立；[节目页](https://podcasts.apple.com/gb/podcast/creating-muse-the-fastest-growing-ai-product-since/id1836497887?i=1000795226761)提供具体章节。Wang 的[访谈转录](https://podscripts.co/podcasts/david-senra/creating-muse-the-fastest-growing-ai-product-since-chatgpt-alexandr-wang-meta)还描述把百余项目标行为逐项变成评估与改进清单，这是他的自述 | 灵思 benchmark 不应只有一个“工作流生成成功率”，应列出按键录音、蜂窝上传、失败恢复、自动分类、人工优先等具体行为门槛。Muse 的消费者产品论不直接证明 CoBuilder 的架构选择；要把“打磨”翻译成同题评估与真实用户观察 |
 | [Cursor 创始人 Michael Truell × Lenny's Podcast，2025-05](https://www.lennysnewsletter.com/p/the-rise-of-cursor-michael-truell) | 从 CAD 转向代码；在开发者已有工作台建立体验，针对补全等特定任务做专用模型，强调内部高频使用 | 先找到高频且可感知的产品时刻：例如开发者看到代码已烧入目标板、按键录音上传成功。宏大平台叙事不能代替这个时刻。访谈是创始人观点，不能当独立效果评估 |
 | [Claude Code 团队 Boris Cherny / Cat Wu × Latent Space，2025-05](https://www.latent.space/p/claude-code) | 终端和文本输入输出作为可组合接口；选择简单、可理解、可扩展的原语 | 串口、固件工具链、日志诊断可能先做成高质量原语，再让 CoBuilder 组合；避免一开始把所有开发阶段封进黑箱 |
 | [n8n 创始人 Jan Oberhauser × Sequoia Training Data](https://sequoiacap.com/podcast/training-data-jan-oberhauser) | n8n 从连接应用的自动化层发展到 AI 自动化；开放集成与社区推动覆盖广度 | CoBuilder 的“平台能力通过自然语言操作”需要稳定的工具接口和权限边界；访谈包含商业叙事，具体规模以下面的官方披露为准 |
@@ -115,6 +139,7 @@
 | [Replit / Agent 4，2026-03](https://replit.com/blog/replit-raises-400-million-dollars) | 学生、非开发者、企业内部构建者、开发者 | **Replit 平台超过 5,000 万用户**，不是 Agent 4 活跃用户 | 公司称**预计** 2026 年底达到 10 亿美元年化收入运行率；预测不是当期业绩，更不是 Agent 4 单品 |
 | [Lovable，2025-11/2026-08](https://lovable.dev/blog/one-year-of-lovable) · [2026-08 披露](https://lovable.dev/blog/series-c) | 创业者、业务人员、设计师和开发者 | 累计 **超过 6,000 万项目**；其所建应用每月 **超过 9 亿访问**，均不是独立用户数 | 2025-11 官方披露 **2 亿美元 ARR**；本轮未找到可核实的更晚官方 ARR |
 | [Manus，2025-12](https://www.manus.im/blog/manus-100m-arr) | 一般用户、专业人员和团队 | 官方说“数百万用户”，未给精确、活跃或付费口径；生成 8,000 万台虚拟计算机不是用户量 | **1 亿美元 ARR**；含使用量等在内的总收入年化运行率 **超过 1.25 亿美元**，两个口径不可相加 |
+| [Muse / Meta，2026-09](https://about.fb.com/news/2026/09/introducing-muse-personal-ai-agent/) | 美国首发的个人 Agent 用户，跨应用处理长期个人事务 | [Wang 在 2026-10 访谈中自述](https://podscripts.co/podcasts/david-senra/creating-muse-the-fastest-growing-ai-product-since-chatgpt-alexandr-wang-meta)已达“数百万”量级，但拒绝给精确数字；未公开可比的 MAU、留存或付费人数，访谈自述不能当独立审计 | 官方说明基础使用免费、另有订阅；未找到 Muse 单品收入披露。不能把 Meta 总用户或 Muse 模型 API 用户算作 Muse Agent 用户 |
 | [n8n / Assistant，2025 及 2026-09](https://blog.n8n.io/series-b/) · [Assistant 发布](https://blog.n8n.io/introducing-n8n-assistant/) | 自动化构建者、工程/业务技术团队 | 2025 年披露 **20 万以上用户、3,000 多家企业**；Assistant 2026-09 发布后未单独披露用户量 | 未找到可核实的产品收入绝对额 |
 | [Dify，2026-03](https://dify.ai/blog/dify-raises-30m-tomorrow-s-organizations-will-be-built-by-people-and-agents) | AI 应用开发者、团队、企业 | 运行于 **140 万以上机器**，涉及 **2,000 多团队、280 家企业**；机器数不是独立用户 | 未找到可核实的营收披露；融资 3,000 万美元不属于营收 |
 | [LangSmith Engine](https://www.langchain.com/blog/introducing-langsmith-engine) | 运营已上线 Agent 的工程团队 | 本轮未找到 Engine 单品可比用户数据 | 未找到 Engine 单品营收披露；LangChain 公司的融资/估值不能替代 |
